@@ -104,6 +104,10 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   BMP280CheckStatus();
+  BMP280reset();
+  HAL_Delay(1000);
+  SetOverSamplingNPowerMode();
+  BMP280readCoefficients();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -111,6 +115,8 @@ int main(void)
   while (1)
   {
 
+	  printf("%d Deg C\t",(int)BMP280readTemperature());
+	  printf("%d P\r\n",(int)BMP280readPressure());
 	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
