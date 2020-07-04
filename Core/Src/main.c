@@ -103,10 +103,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  if(HAL_I2C_IsDeviceReady(&hi2c1,0xEC,2,10) == HAL_OK)
-  {
-	  printf("The device found\r\n");
-  }
+  BMP280CheckStatus();
   /* USER CODE END 2 */
 
   /* Infinite loop */
