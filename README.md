@@ -1,0 +1,1 @@
+# BMP280_STM32_interface. The repository contains interfacing BMP280 temperature and pressure sensor from Bosch with STM32-FF6RE nucleo development board. Im using both i2c and spi communication protocols for the purpose of interfacing.
