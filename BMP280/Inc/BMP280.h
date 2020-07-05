@@ -9,4 +9,4 @@ void BMP280readCoefficients();
 void SetOverSamplingNPowerMode();
 float BMP280readTemperature();
 float BMP280readPressure();
-void BMP280reset(void);
+void BMP280reset();

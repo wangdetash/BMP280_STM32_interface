@@ -1,6 +1,12 @@
 #include "main.h"
 
-/*!
+/**
+ *  7 bit i2c address appednded with 0 at RHS.
+ */
+#define BMP280_ADDRESS 		  (0xEC) /* The 7 bit address is 0x76 */
+#define BMP280_ADDRESS_ALT    (0xEE) /* The 7 bit address is 0x77 */
+
+/**
  * Registers available on the sensor.
  */
 enum {
@@ -115,42 +121,57 @@ int32_t t_fine;
 bmp280_calib_data _bmp280_calib;
 
 /**
- * The finction cbecks the status of sensor
+ * @brief The finction cbecks the status of sensor
  */
 void BMP280CheckStatus()
 {
-	if(HAL_I2C_IsDeviceReady(&hi2c1,0xEC,2,10) == HAL_OK)
+	if(HAL_I2C_IsDeviceReady(&hi2c1,BMP280_ADDRESS,2,10) == HAL_OK)
 	  {
 		  printf("BMP280 found\r\n");
 	  }
 }
 
+/**
+ * @brief Reads 8 bit register.
+ * @param The register adddress to be read.
+ * @return 8 bit data from the register.
+ */
 uint8_t BMP280Read8bit(uint8_t Register)
 {
 	i2cData[0] = Register;
-	HAL_I2C_Master_Transmit(&hi2c1,0xEC,i2cData,1,10);
-	HAL_I2C_Master_Receive(&hi2c1, 0xEC,&i2cData[1], 1, 10);
+	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,i2cData,1,10);
+	HAL_I2C_Master_Receive(&hi2c1, BMP280_ADDRESS,&i2cData[1], 1, 10);
 	return i2cData[1];
 }
 
+/**
+ * @brief Reads 2 consecutive 8 bit register.
+ * @param Register The starting address of register to be read.
+ * @return the 16 bit obtained after reading 2 registers.
+ */
 uint16_t BMP280Read16bit(uint8_t Register)
 {
 	uint32_t Out,msb,lsb;
 	i2cData[0] = Register;
-	HAL_I2C_Master_Transmit(&hi2c1,0xEC,i2cData,1,10);
-	HAL_I2C_Master_Receive(&hi2c1, 0xEC,&i2cData[0],2, 10);
+	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,i2cData,1,10);
+	HAL_I2C_Master_Receive(&hi2c1, BMP280_ADDRESS,&i2cData[0],2, 10);
 	msb = (i2cData[0] << 8);
 	lsb = (i2cData[1]);
 	Out = msb|lsb;
 	return Out;
 }
 
+/**
+ * @brief Reads 3 consecutive 8 bit registers.
+ * @param Register The starting register address.
+ * @return the 24 bit obtained after reading 3 registers.
+ */
 uint32_t BMP280Read24bit(uint8_t Register)
 {
 	uint32_t Out,msb,lsb,xlsb;
 	i2cData[0] = Register;
-	HAL_I2C_Master_Transmit(&hi2c1,0xEC,i2cData,1,10);
-	HAL_I2C_Master_Receive(&hi2c1, 0xEC,&i2cData[0],3, 10);
+	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,i2cData,1,10);
+	HAL_I2C_Master_Receive(&hi2c1, BMP280_ADDRESS,&i2cData[0],3, 10);
 	msb = (i2cData[0] << 16);
 	lsb = (i2cData[1] << 8);
 	xlsb = (i2cData[2] >> 4);
@@ -158,11 +179,16 @@ uint32_t BMP280Read24bit(uint8_t Register)
 	return Out;
 }
 
+/**
+ * @brief Reads 8 bit data from register.
+ * @param Register The 8 bit register address.
+ * @param Data The data to be written to the register.
+ */
 void BMP280Write8bit(uint8_t Register,uint8_t Data)
 {
 	i2cData[0] = Register;
 	i2cData[1] = Data;
-	HAL_I2C_Master_Transmit(&hi2c1,0xEC,i2cData,2,30);
+	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,i2cData,2,30);
 }
 
 
@@ -194,12 +220,18 @@ void BMP280readCoefficients()
   _bmp280_calib.dig_P9 = BMP280read16_LE(BMP280_REGISTER_DIG_P9);
 }
 
+/**
+ * @brief The function used to set sampling rate for both temperature and
+ * pressure measurement.Power mode can also be set set by writing
+ * apporpriate value to the register.The function should be called
+ * inorder to start measurement of both temp and pressure.
+ */
 void SetOverSamplingNPowerMode()
 {
 	BMP280Write8bit(BMP280_REGISTER_CONTROL,0x27);
 }
 
-/*!
+/*
  * Reads the temperature from the device.
  * @return The temperature in degress celcius.
  */
@@ -226,7 +258,7 @@ float BMP280readTemperature()
   return T / 100;
 }
 
-/*!
+/*
  * Reads the barometric pressure from the device.
  * @return Barometric pressure in Pa.
  */
@@ -264,7 +296,7 @@ float BMP280readPressure()
 /*
  *  @brief  Resets the chip via soft reset
  */
-void BMP280reset(void)
+void BMP280reset()
 {
 	BMP280Write8bit(BMP280_REGISTER_SOFTRESET, MODE_SOFT_RESET_CODE);
 }
