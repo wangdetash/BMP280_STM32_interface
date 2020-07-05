@@ -2,9 +2,15 @@
 
 /**
  *  7 bit i2c address appednded with 0 at RHS.
+ *  The i2c address depends on the status of SD0 pin.
+ *  Change the definition based on the status of the pin.
  */
-#define BMP280_ADDRESS 		  (0xEC) /* The 7 bit address is 0x76 */
-#define BMP280_ADDRESS_ALT    (0xEE) /* The 7 bit address is 0x77 */
+#define SD0_SET_HIGH
+#if defined SD0_SET_HIGH
+	#define BMP280_ADDRESS 		  (0xEC) /* The 7 bit address is 0x76 */
+#else if defined SD0_SET_LOW
+	#define BMP280_ADDRESS    (0xEE) /* The 7 bit address is 0x77 */
+#endif
 
 /**
  * Registers available on the sensor.
