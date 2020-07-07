@@ -73,7 +73,7 @@ static void MX_SPI2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t spiData[3];
+
 /* USER CODE END 0 */
 
 /**
@@ -116,32 +116,23 @@ int main(void)
   HAL_Delay(10);
 
 
-#if defined I2C
   BMP280CheckStatus();
   BMP280reset();
   HAL_Delay(1000);
   SetOverSamplingNPowerMode();
   BMP280readCoefficients();
-#endif
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  /**
-	   * Read the Chip ID to confirm that the communication between master and slave could be established.
-	   */
-	   spiData[0] = 0xD0;
-	   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_RESET);
-	   HAL_SPI_Transmit(&hspi2,spiData,1,10);
-	   HAL_SPI_Receive(&hspi2,&spiData[1],1,10);
-	   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_SET);
-	   printf("0x%x\r\n",spiData[1]);
-	   HAL_Delay(1000);
 
-	  /*printf("%d Deg C\t",(int)BMP280readTemperature());
-	  printf("%d P\r\n",(int)BMP280readPressure());*/
+
+	  printf("%d Deg C\t",(int)BMP280readTemperature());
+	  printf("%d P\r\n",(int)BMP280readPressure());
+	  HAL_Delay(1000);
 
 
 

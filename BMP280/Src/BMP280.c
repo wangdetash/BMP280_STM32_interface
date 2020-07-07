@@ -1,5 +1,6 @@
 #include "main.h"
 
+#define SPI
 /**
  *  7 bit i2c address appednded with 0 at RHS.
  *  The i2c address depends on the status of SD0 pin.
@@ -121,7 +122,8 @@ typedef struct {
   };
 
 extern I2C_HandleTypeDef hi2c1;
-uint8_t i2cData[3];
+extern SPI_HandleTypeDef hspi2;
+uint8_t SerialData[3];
 
 int32_t t_fine;
 bmp280_calib_data _bmp280_calib;
@@ -131,10 +133,17 @@ bmp280_calib_data _bmp280_calib;
  */
 void BMP280CheckStatus()
 {
+#if defined I2C
 	if(HAL_I2C_IsDeviceReady(&hi2c1,BMP280_ADDRESS,2,10) == HAL_OK)
 	  {
 		  printf("BMP280 found\r\n");
 	  }
+#else if defined SPI
+	if(BMP280Read8bit(0xD0) == 0x58)
+	{
+		 printf("BMP280 found\r\n");
+	}
+#endif
 }
 
 /**
@@ -144,12 +153,19 @@ void BMP280CheckStatus()
  */
 uint8_t BMP280Read8bit(uint8_t Register)
 {
-	i2cData[0] = Register;
-	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,i2cData,1,10);
-	HAL_I2C_Master_Receive(&hi2c1, BMP280_ADDRESS,&i2cData[1], 1, 10);
-	return i2cData[1];
-}
+	SerialData[0] = Register | 0x80;
+#if defined I2C
+	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,SerialData,1,10);
+	HAL_I2C_Master_Receive(&hi2c1, BMP280_ADDRESS,&SerialData[1], 1, 10);
+#else if defined SPI
+   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_RESET);
+   HAL_SPI_Transmit(&hspi2,SerialData,1,10);
+   HAL_SPI_Receive(&hspi2,&SerialData[1],1,10);
+   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_SET);
+#endif
+   return SerialData[1];
 
+}
 /**
  * @brief Reads 2 consecutive 8 bit register.
  * @param Register The starting address of register to be read.
@@ -158,11 +174,18 @@ uint8_t BMP280Read8bit(uint8_t Register)
 uint16_t BMP280Read16bit(uint8_t Register)
 {
 	uint32_t Out,msb,lsb;
-	i2cData[0] = Register;
-	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,i2cData,1,10);
-	HAL_I2C_Master_Receive(&hi2c1, BMP280_ADDRESS,&i2cData[0],2, 10);
-	msb = (i2cData[0] << 8);
-	lsb = (i2cData[1]);
+	SerialData[0] = Register | 0x80;
+#if defined I2C
+	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,SerialData,1,10);
+	HAL_I2C_Master_Receive(&hi2c1, BMP280_ADDRESS,&SerialData[0],2, 10);
+#else if defined SPI
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi2,SerialData,1,10);
+	HAL_SPI_Receive(&hspi2,&SerialData[0],2,10);
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_SET);
+#endif
+	msb = (SerialData[0] << 8);
+	lsb = (SerialData[1]);
 	Out = msb|lsb;
 	return Out;
 }
@@ -175,12 +198,19 @@ uint16_t BMP280Read16bit(uint8_t Register)
 uint32_t BMP280Read24bit(uint8_t Register)
 {
 	uint32_t Out,msb,lsb,xlsb;
-	i2cData[0] = Register;
-	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,i2cData,1,10);
-	HAL_I2C_Master_Receive(&hi2c1, BMP280_ADDRESS,&i2cData[0],3, 10);
-	msb = (i2cData[0] << 16);
-	lsb = (i2cData[1] << 8);
-	xlsb = (i2cData[2] >> 4);
+	SerialData[0] = Register | 0x80;
+#if defined I2C
+	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,SerialData,1,10);
+	HAL_I2C_Master_Receive(&hi2c1, BMP280_ADDRESS,&SerialData[0],3, 10);
+#else if defined SPI
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi2,SerialData,1,10);
+	HAL_SPI_Receive(&hspi2,&SerialData[0],3,10);
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_SET);
+#endif
+	msb = (SerialData[0] << 16);
+	lsb = (SerialData[1] << 8);
+	xlsb = (SerialData[2] >> 4);
 	Out = msb|lsb|xlsb;
 	return Out;
 }
@@ -192,9 +222,15 @@ uint32_t BMP280Read24bit(uint8_t Register)
  */
 void BMP280Write8bit(uint8_t Register,uint8_t Data)
 {
-	i2cData[0] = Register;
-	i2cData[1] = Data;
-	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,i2cData,2,30);
+	SerialData[0] = Register & ~0x80;
+	SerialData[1] = Data;
+#if defined I2C
+	HAL_I2C_Master_Transmit(&hi2c1,BMP280_ADDRESS,SerialData,2,30);
+#else if defined SPI
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_RESET);
+    HAL_SPI_Transmit(&hspi2,SerialData,2,30);
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_4,GPIO_PIN_SET);
+#endif
 }
 
 
